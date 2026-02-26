@@ -1,16 +1,13 @@
--- physycal level
-gcloud compute instances list
-
-gcloud compute ssh postgres14
+-- physycal architecture
 pg_lsclusters
 
 -- add another cluster
-pg_createcluster 14 main2
-sudo pg_createcluster 14 main2
-sudo nano /etc/postgresql/14/main/postgresql.conf
+pg_createcluster 18 main2
+sudo pg_createcluster 18 main2
+sudo nano /etc/postgresql/18/main/postgresql.conf
 
 sudo su postgres
-cd /var/lib/postgresql/14/main
+cd /var/lib/postgresql/18/main
 ls -la
 ls -l base
 # - command in psql
@@ -20,7 +17,6 @@ ls -l base
 
 -- make a catalog for new tablespace
 exit
-sudo su
 sudo mkdir /home/postgres
 sudo chown postgres /home/postgres
 sudo su postgres
@@ -39,10 +35,11 @@ psql
 exit
 cd tmptblspc/
 ls
-cd PG_14_202107181/
+cd PG_18_202506291/
 ls -la
+psql -c "SELECT oid, datname, dattablespace FROM pg_database;"
 
-cd 16385
+cd 16519
 ls -la
 
 psql
@@ -112,16 +109,16 @@ psql -h 34.134.57.202 -U postgres -W
 netstat -a | grep postgresql
 
 -- uncomment listen_addresses = '*'
-sudo nano /etc/postgresql/14/main/postgresql.conf
+sudo nano /etc/postgresql/18/main/postgresql.conf
 
 -- host    all             all             0.0.0.0/0               md5
-sudo nano /etc/postgresql/14/main/pg_hba.conf
+sudo nano /etc/postgresql/18/main/pg_hba.conf
 
 -- change password
 ALTER USER postgres PASSWORD 'Postgres123#';
 
 -- restart server
-sudo pg_ctlcluster 14 main restart
+sudo pg_ctlcluster 18 main restart
 
 -- try access
 psql -h 34.134.57.202 -U postgres -W
@@ -154,11 +151,11 @@ pg_lsclusters
 
 sudo pg_dropcluster 13 main13
 
-sudo cat /etc/postgresql/14/main13/pg_hba.conf
+sudo cat /etc/postgresql/18/main13/pg_hba.conf
 
-sudo nano /etc/postgresql/14/main13/pg_hba.conf
+sudo nano /etc/postgresql/18/main13/pg_hba.conf
 
-sudo pg_ctlcluster 14 main13 restart
+sudo pg_ctlcluster 18 main13 restart
 -- error
 sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
 
@@ -171,11 +168,11 @@ sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
 
 -- change back to md5
 
-sudo nano /etc/postgresql/14/main13/pg_hba.conf
+sudo nano /etc/postgresql/18/main13/pg_hba.conf
 
-sudo pg_ctlcluster 14 main13 restart
+sudo pg_ctlcluster 18 main13 restart
 sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
 
 
-sudo pg_ctlcluster 14 main13 stop
-sudo pg_dropcluster 14 main13
+sudo pg_ctlcluster 18 main13 stop
+sudo pg_dropcluster 18 main13
