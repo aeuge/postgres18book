@@ -51,9 +51,20 @@ psql
 # ALTER TABLE test SET TABLESPACE pg_default;
 # SELECT oid, spcname FROM pg_tablespace; -- oid унимальный номер, по кторому можем найти файлы
 # SELECT oid, datname,dattablespace FROM pg_database;
-
 -- where is table
 # SELECT pg_relation_filepath('test2');
+
+# SELECT OID, relname, relnamespace FROM pg_class WHERE OID=24579;
+
+# \! ls -la /var/lib/postgresql/18/main/pg_tblspc
+# \! ls -la /var/lib/postgresql/18/main/pg_tblspc/16517/PG_18_202506291/16519/ | grep 24579
+# ALTER TABLE test2 SET tablespace ts;
+# SELECT pg_relation_filepath('test2');
+# \! ls -la /var/lib/postgresql/18/main/pg_tblspc/16517/PG_18_202506291/16519/ | grep 24583
+
+# INSERT INTO test2 VALUES ('1');
+
+
 
 -- SHOW size of database
 # SELECT pg_database_size('app');
@@ -80,10 +91,9 @@ psql
 exit
 cd /home/postgres
 mkdir tmptblspc2
-psql
+psql -d app
 # CREATE tablespace ts2 location '/home/postgres/tmptblspc2';
 
-# \c app
 # ALTER TABLE test SET TABLESPACE ts2;
 
 -- drop directory with new ts
