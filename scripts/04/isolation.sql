@@ -1,0 +1,78 @@
+-- isolation level
+-- 1 console
+CREATE TABLE test (i serial, amount int);
+INSERT INTO test(amount) VALUES (1);
+INSERT INTO test(amount) VALUES (2);
+show transaction isolation level;
+
+BEGIN;
+SELECT * FROM test;
+
+BEGIN;
+UPDATE test set amount = 3 WHERE i = 1;
+COMMIT;
+
+-- 2 concole
+BEGIN;
+UPDATE test set amount = 3 WHERE i = 1;
+COMMIT;
+
+-- 1 console
+SELECT * FROM test;
+COMMIT;
+
+-- ISOLATION LEVEL REPEATABLE READ
+-- 1 console
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT * FROM test;
+
+-- 2 concole
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+INSERT INTO test VALUES (8);
+COMMIT;
+
+-- 1 console
+SELECT * FROM test;
+COMMIT;
+
+
+
+-- TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+DROP TABLE IF EXISTS testS;
+CREATE TABLE testS (i int, amount int);
+INSERT INTO TESTS VALUES (1,10), (1,20), (2,100), (2,200); 
+
+
+-- 1 console
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+SELECT sum(amount) FROM testS WHERE i = 1;
+INSERT INTO testS VALUES (2,30);
+
+-- 2 consol
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+SELECT sum(amount) FROM testS WHERE i = 2;
+INSERT INTO testS VALUES (1,300);
+
+-- 1 console 
+COMMIT;
+
+-- 2 console 
+COMMIT;
+
+
+-- same on RR
+-- 1 console
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT sum(amount) FROM testS WHERE i = 1;
+INSERT INTO testS VALUES (2,30);
+
+-- 2 consol
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT sum(amount) FROM testS WHERE i = 2;
+INSERT INTO testS VALUES (1,300);
+
+-- 1 console 
+COMMIT;
+
+-- 2 console 
+COMMIT;

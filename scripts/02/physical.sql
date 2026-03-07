@@ -94,15 +94,14 @@ mkdir tmptblspc2
 psql -d app
 # CREATE tablespace ts2 location '/home/postgres/tmptblspc2';
 
-# ALTER TABLE test SET TABLESPACE ts2;
+# ALTER TABLE test2 SET TABLESPACE ts2;
 
 -- drop directory with new ts
 exit
 rm -rf tmptblspc2
-psql
-\c app
+psql -d app
 \dt
-SELECT * FROM test;
+SELECT * FROM test2;
 
 exit
 rm -rf tmptblspc
@@ -111,78 +110,34 @@ psql
 
 DROP DATABASE app;
 
+DROP TABLESPACE ts;
+DROP TABLESPACE ts2;
 
--- open access
--- try access
-psql -h 34.134.57.202 -U postgres -W
 
-netstat -a | grep postgresql
-
--- uncomment listen_addresses = '*'
-sudo nano /etc/postgresql/18/main/postgresql.conf
-
--- host    all             all             0.0.0.0/0               md5
-sudo nano /etc/postgresql/18/main/pg_hba.conf
-
--- change password
-ALTER USER postgres PASSWORD 'Postgres123#';
-
--- restart server
-sudo pg_ctlcluster 18 main restart
-
--- try access
-psql -h 34.134.57.202 -U postgres -W
 
 
 -- pg_updatecluster
-sudo DEBIAN_FRONTEND=noninteractive apt -y install postgresql-13
+sudo DEBIAN_FRONTEND=noninteractive apt -y install postgresql-17
 
 pg_lsclusters
 
-pg_upgradecluster 13 main
+pg_createcluster 17 main
+
+pg_upgradecluster 17 main
 
 help pg_upgradecluster
 
-sudo pg_upgradecluster 13 main upgrade13
+sudo pg_upgradecluster 17 main upgrade17
 
-sudo pg_renamecluster 13 main main13
-
-pg_lsclusters
-
-sudo -u postgres psql -p 5434
-
-CREATE ROLE testpass PASSWORD 'testpass' LOGIN;
-
-sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
-
-sudo pg_upgradecluster 13 main13
+sudo pg_renamecluster 17 main main17
 
 pg_lsclusters
 
-sudo pg_dropcluster 13 main13
+sudo pg_upgradecluster 17 main17
 
-sudo cat /etc/postgresql/18/main13/pg_hba.conf
+pg_lsclusters
 
-sudo nano /etc/postgresql/18/main13/pg_hba.conf
+sudo pg_dropcluster 17 main17
 
-sudo pg_ctlcluster 18 main13 restart
--- error
-sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
-
-
-sudo -u postgres psql -p 5434
-ALTER USER testpass PASSWORD 'testpass';
-exit
-
-sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
-
--- change back to md5
-
-sudo nano /etc/postgresql/18/main13/pg_hba.conf
-
-sudo pg_ctlcluster 18 main13 restart
-sudo -u postgres psql -p 5434 -U testpass -h localhost -d postgres -W
-
-
-sudo pg_ctlcluster 18 main13 stop
-sudo pg_dropcluster 18 main13
+sudo pg_ctlcluster 18 main17 stop
+sudo pg_dropcluster 18 main17
