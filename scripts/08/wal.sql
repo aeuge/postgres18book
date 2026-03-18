@@ -106,35 +106,32 @@ SELECT lsn FROM page_header(get_raw_page('test_text',0));
 SELECT '0/182E0D8'::pg_lsn - '0/17E0E80'::pg_lsn;
 
 -- look on wal file
-/usr/lib/postgresql/18/bin/pg_waldump -p /var/lib/postgresql/18/main/pg_wal -s 0/17E0E80 -e 0/182E0D8 000000010000000000000001
+\! /usr/lib/postgresql/18/bin/pg_waldump -p /var/lib/postgresql/18/main/pg_wal -s 0/17E0E80 -e 0/182E0D8 000000010000000000000001
 
 
 
 ---Checkpoint----
 -- look cluster info
-/usr/lib/postgresql/18/bin/pg_controldata /var/lib/postgresql/18/main/
+\! /usr/lib/postgresql/18/bin/pg_controldata /var/lib/postgresql/18/main/
 SELECT pg_current_wal_insert_lsn();
 CHECKPOINT;
 SELECT pg_current_wal_insert_lsn();
-/usr/lib/postgresql/18/bin/pg_waldump -p /var/lib/postgresql/18/main/pg_wal -s 0/179E6F8 -e 0/179E7E0 000000010000000000000001
+\! /usr/lib/postgresql/18/bin/pg_waldump -p /var/lib/postgresql/18/main/pg_wal -s 0/179E6F8 -e 0/179E7E0 000000010000000000000001
 
 -- let`s stop cluster emergency
-\c buffer_temp
-INSERT INTO test_text values('error');
+sudo -u postgres psql -d buffer_temp -c "INSERT INTO test_text values('error');"
 
 sudo pg_ctlcluster 18 main stop -m immediate
 
 sudo pg_ctlcluster 18 main start
 
-sudo -u postgres psql
+sudo -u postgres psql -d buffer_temp -c "SELECT * FROM test_text WHERE t = 'error';"
 
-\c buffer_temp
-SELECT * FROM test_text WHERE t = 'error';
+sudo tail /var/log/postgresql/postgresql-18-main.log
 
 
 --  bgwriter statistics
 SELECT * FROM pg_stat_bgwriter \gx
-
 
 
 -- let`s try tests in syncronous & asynchronous modes

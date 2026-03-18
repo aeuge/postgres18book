@@ -39,7 +39,7 @@ echo "localhost:5432:thai:postgres:admin123#" | sudo tee -a /var/lib/postgresql/
 
 echo "listen_addresses = '*'" | sudo tee -a /etc/postgresql/18/main/postgresql.conf
 echo "host all all 10.0.0.0/8 scram-sha-256" | sudo tee -a /etc/postgresql/18/main/pg_hba.conf
-sudo pg_ctlcluster 16 main restart
+sudo pg_ctlcluster 18 main restart
 
 sudo systemctl enable pgbouncer 
 sudo systemctl start pgbouncer 
@@ -47,7 +47,7 @@ sudo systemctl start pgbouncer
 sudo -u postgres psql -p 6432 -h 127.0.0.1 -d thai -U postgres
 
 -- if something wrong
-tail /var/log/postgresql/postgresql-16-main.log
+tail /var/log/postgresql/postgresql-18-main.log
 tail /var/log/postgresql/pgbouncer.log
 cat /etc/pgbouncer/pgbouncer.ini
 cat /etc/pgbouncer/userlist.txt
