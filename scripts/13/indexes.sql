@@ -2,7 +2,7 @@ sudo su postgres
 psql
 CREATE DATABASE dvdrental;
 cd $HOME
-wget --quiet https://www.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip
+wget --quiet wget --quiet https://github.com/aeuge/postgres18book/blob/main/scripts/dvdrental.zip
 unzip dvdrental.zip
 pg_restore -U postgres -d dvdrental dvdrental.tar
 psql
