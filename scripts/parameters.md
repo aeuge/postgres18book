@@ -68,3 +68,5 @@ https://www.opennet.ru/man.shtml?topic=posix_fadvise&category=2&russian=0
 ## old_snapshot_threshold = -1
 ***
 Ни в коем случае НЕ включать! Разбираем на курсе, падение производительности может достигать 10х+
+В 18 PostgreSQL наконец-то отключили
+***
