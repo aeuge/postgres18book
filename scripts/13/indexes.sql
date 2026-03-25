@@ -110,3 +110,18 @@ VACUUM pgbench_accounts;
 SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
 REINDEX INDEX CONCURRENTLY pgbench_accounts_pkey;
 SELECT * FROM pgstatindex('pgbench_accounts_pkey') \gx
+
+----
+SELECT count(*)
+FROM `bigquery-public-data.chicago_taxi_trips.taxi_trips`;
+
+SELECT count(*)
+FROM `bigquery-public-data.chicago_taxi_trips.taxi_trips`;
+
+CREATE INDEX idx_taxi2 on taxi_trips(payment_type) include (tips, fare);
+
+ANALYZE taxi_trips;
+
+-- Cloud Console URL – https://console.cloud.google.com/storage/browser/chicago10
+-- Скачать через gsutil URI – gs://chicago10
+
