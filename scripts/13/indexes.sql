@@ -118,6 +118,8 @@ FROM `bigquery-public-data.chicago_taxi_trips.taxi_trips`;
 SELECT count(*)
 FROM `bigquery-public-data.chicago_taxi_trips.taxi_trips`;
 
+CREATE INDEX idx_taxi on taxi_trips(payment_type, tips, fare);
+
 CREATE INDEX idx_taxi2 on taxi_trips(payment_type) include (tips, fare);
 
 ANALYZE taxi_trips;
