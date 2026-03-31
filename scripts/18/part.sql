@@ -10,19 +10,19 @@ CREATE TABLE logs (
 ) PARTITION BY RANGE (logdate);
 
 -- create sections
-CREATE TABLE logs_y2021m01 PARTITION OF logs FOR VALUES FROM ('2021-01-01') TO ('2021-02-01');
-CREATE TABLE logs_y2021m02 PARTITION OF logs FOR VALUES FROM ('2021-02-01') TO ('2021-03-01');
-CREATE TABLE logs_y2021m03 PARTITION OF logs FOR VALUES FROM ('2021-03-01') TO ('2021-04-01');
-CREATE TABLE logs_y2021m04 PARTITION OF logs FOR VALUES FROM ('2021-04-01') TO ('2021-05-01');
-CREATE TABLE logs_y2021m05 PARTITION OF logs FOR VALUES FROM ('2021-05-01') TO ('2021-06-01');
-CREATE TABLE logs_y2021m06 PARTITION OF logs FOR VALUES FROM ('2021-06-01') TO ('2021-07-01');
-CREATE TABLE logs_y2021m07 PARTITION OF logs FOR VALUES FROM ('2021-07-01') TO ('2021-08-01');
-CREATE TABLE logs_y2021m08 PARTITION OF logs FOR VALUES FROM ('2021-08-01') TO ('2021-09-01');
-CREATE TABLE logs_y2021m09 PARTITION OF logs FOR VALUES FROM ('2021-09-01') TO ('2021-10-01');
-CREATE TABLE logs_y2021m10 PARTITION OF logs FOR VALUES FROM ('2021-10-01') TO ('2021-11-01');
-CREATE TABLE logs_y2021m11 PARTITION OF logs FOR VALUES FROM ('2021-11-01') TO ('2021-12-01');
-CREATE TABLE logs_y2021m12 PARTITION OF logs FOR VALUES FROM ('2021-12-01') TO ('2022-01-01');
-CREATE TABLE logs_y2022m01 PARTITION OF logs FOR VALUES FROM ('2022-01-01') TO ('2022-02-01');
+CREATE TABLE logs_y2026m01 PARTITION OF logs FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE logs_y2026m02 PARTITION OF logs FOR VALUES FROM ('2026-02-01') TO ('2026-03-01');
+CREATE TABLE logs_y2026m03 PARTITION OF logs FOR VALUES FROM ('2026-03-01') TO ('2026-04-01');
+CREATE TABLE logs_y2026m04 PARTITION OF logs FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+CREATE TABLE logs_y2026m05 PARTITION OF logs FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+CREATE TABLE logs_y2026m06 PARTITION OF logs FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+CREATE TABLE logs_y2026m07 PARTITION OF logs FOR VALUES FROM ('2026-07-01') TO ('2026-08-01');
+CREATE TABLE logs_y2026m08 PARTITION OF logs FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
+CREATE TABLE logs_y2026m09 PARTITION OF logs FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+CREATE TABLE logs_y2026m10 PARTITION OF logs FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+CREATE TABLE logs_y2026m11 PARTITION OF logs FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+CREATE TABLE logs_y2026m12 PARTITION OF logs FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
+CREATE TABLE logs_y2027m01 PARTITION OF logs FOR VALUES FROM ('2027-01-01') TO ('2027-02-01');
 
 -- create index
 CREATE INDEX ON logs (logdate);
@@ -32,8 +32,8 @@ CREATE INDEX ON logs (logdate);
 INSERT INTO logs(logdate, message, user_id) VALUES (now(), 'DELETE RECORD 111 ON TABLE accounts', 33);
 
 SELECT COUNT(*) FROM logs;
-SELECT COUNT(*) FROM logs_y2021m05;
-SELECT COUNT(*) FROM logs_y2021m06;
+SELECT COUNT(*) FROM logs_y2026m05;
+SELECT COUNT(*) FROM logs_y2026m06;
 
 EXPLAIN SELECT * FROM logs WHERE logdate = now()::date;
 EXPLAIN SELECT * FROM logs WHERE user_id = 1;
@@ -53,7 +53,7 @@ INSERT INTO bookings.bookings2 SELECT * FROM bookings.bookings;
 
 BEGIN;
 SET LOCAL statement_timeout to '1s';
-ALTER TABLE bookings.bookings ADD CONSTRAINT bookings_book_date_check CHECK (book_date < '2021-06-01' and book_date is not null) not valid;
+ALTER TABLE bookings.bookings ADD CONSTRAINT bookings_book_date_check CHECK (book_date < '2026-06-01' and book_date is not null) not valid;
 COMMIT;
 
 ALTER TABLE bookings.bookings VALIDATE CONSTRAINT bookings_book_date_check;
@@ -66,14 +66,14 @@ CREATE TABLE bookings.bookings_part (
 	total_amount numeric(10,2) NOT NULL
 ) PARTITION BY RANGE (book_date);
 
-CREATE TABLE bookings.bookings_part_y2021m6avobe PARTITION OF bookings.bookings_part FOR VALUES FROM ('2021-06-01') TO (MAXVALUE);
+CREATE TABLE bookings.bookings_part_y2026m6avobe PARTITION OF bookings.bookings_part FOR VALUES FROM ('2026-06-01') TO (MAXVALUE);
 
 
 BEGIN;
 SET statement_timeout TO '1s';
 ALTER TABLE bookings.bookings RENAME TO bookings_archive;
 ALTER TABLE bookings.bookings_part RENAME TO bookings;
-ALTER TABLE bookings.bookings ATTACH PARTITION bookings.bookings_archive FOR VALUES FROM (MINVALUE) to ('2021-06-01');
+ALTER TABLE bookings.bookings ATTACH PARTITION bookings.bookings_archive FOR VALUES FROM (MINVALUE) to ('2026-06-01');
 COMMIT;
 
 EXPLAIN SELECT * FROM bookings.bookings WHERE book_date = now()::date;
@@ -122,12 +122,12 @@ EXPLAIN SELECT * FROM bookings.bookings WHERE book_date = now()::date;
 \c part
 \d+ logs
 
-INSERT INTO logs(logdate, message, user_id) VALUES ('2021-01-01', 'DELETE RECORD 111 ON TABLE accounts', 33);
+INSERT INTO logs(logdate, message, user_id) VALUES ('2026-01-01', 'DELETE RECORD 111 ON TABLE accounts', 33);
 
-ALTER TABLE logs DETACH PARTITION logs_y2021m01;
+ALTER TABLE logs DETACH PARTITION logs_y2026m01;
 \d+ logs
 
-SELECT * FROM logs_y2021m01;
+SELECT * FROM logs_y2026m01;
 
 CREATE TABLE logs_archive (
     id              serial,
@@ -135,6 +135,6 @@ CREATE TABLE logs_archive (
     message         text,
     user_id         int
 ) PARTITION BY RANGE (logdate);
-ALTER TABLE logs_archive ATTACH PARTITION logs_y2021m01 FOR VALUES FROM ('2021-01-01') TO ('2021-02-01');
+ALTER TABLE logs_archive ATTACH PARTITION logs_y2026m01 FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
 
 SELECT * FROM logs_archive;

@@ -178,6 +178,7 @@ ORDER BY r.startdate
 LIMIT 10;
 
 -- Посчитаем количество проданных билетов:
+EXPLAIN ANALYZE
 SELECT r.id, 
        r.startdate as depart_date, 
        bs.city || ', ' || bs.name as busstation, 

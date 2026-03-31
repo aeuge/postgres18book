@@ -44,7 +44,7 @@ ORDER BY duration DESC;
 CREATE EXTENSION pg_stat_statements;
 ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
 exit
-pg_ctlcluster 16 main restart
+pg_ctlcluster 18 main restart
 psql
 show shared_preload_libraries;
 
