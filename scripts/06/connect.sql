@@ -1,3 +1,5 @@
+
+
 sudo DEBIAN_FRONTEND=noninteractive apt install -y pgbouncer
 
 sudo systemctl status pgbouncer
@@ -56,10 +58,28 @@ cat /etc/postgresql/18/main/postgresql.conf
 
 -- 1
 sudo su postgres
+cat > ~/workload.sql << EOL
+
+\set r random(1, 5000000) 
+SELECT id, fkRide, fio, contact, fkSeat FROM book.tickets WHERE id = :r;
+
+EOL
+
 /usr/lib/postgresql/18/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload.sql -U postgres -p 5432 -h 127.0.0.1 thai
 /usr/lib/postgresql/18/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload.sql -U postgres -p 6432 -h 127.0.0.1 thai
 
 -- 2
+cat > ~/workload2.sql << EOL
+
+INSERT INTO book.tickets (fkRide, fio, contact, fkSeat)
+VALUES (
+	ceil(random()*100)
+	, (array(SELECT fam FROM book.fam))[ceil(random()*110)]::text || ' ' ||
+    (array(SELECT nam FROM book.nam))[ceil(random()*110)]::text
+    ,('{"phone":"+7' || (1000000000::bigint + floor(random()*9000000000)::bigint)::text || '"}')::jsonb
+    , ceil(random()*100));
+
+EOL
 /usr/lib/postgresql/18/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 5432 -h 127.0.0.1 thai
 /usr/lib/postgresql/18/bin/pgbench -c 8 -j 4 -T 10 -f ~/workload2.sql -U postgres -p 6432 -h 127.0.0.1 thai
 
