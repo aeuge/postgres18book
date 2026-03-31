@@ -33,90 +33,130 @@ INSERT INTO logs(logdate, message, user_id) VALUES (now(), 'DELETE RECORD 111 ON
 
 SELECT COUNT(*) FROM logs;
 SELECT COUNT(*) FROM logs_y2026m05;
-SELECT COUNT(*) FROM logs_y2026m06;
+SELECT COUNT(*) FROM logs_y2026m03;
 
 EXPLAIN SELECT * FROM logs WHERE logdate = now()::date;
 EXPLAIN SELECT * FROM logs WHERE user_id = 1;
 
 -- partitioning large table 
 -- 1 option
-\c demo
-\dt bookings.*
-\d+ bookings.bookings
-
-CREATE TABLE bookings.bookings2 (
-	book_ref bpchar(6) NOT NULL,
-	book_date timestamptz NOT NULL,
-	total_amount numeric(10,2) NOT NULL
+\c thai
+\dt book.*
+\d+ book.tickets
+SELECT * INTO book.tickets2 FROM book.tickets;
+CREATE TABLE book.tickets2
+(
+    id bigserial PRIMARY KEY,
+    fkRide int REFERENCES book.ride(id), 
+    fio text,
+    contact jsonb,
+    fkSeat int REFERENCES book.seat(id)
 );
-INSERT INTO bookings.bookings2 SELECT * FROM bookings.bookings;
+INSERT INTO book.tickets2 SELECT * FROM book.tickets;
+
+ALTER TABLE book.tickets ADD book_date timestamptz DEFAULT now() NOT NULL;
 
 BEGIN;
 SET LOCAL statement_timeout to '1s';
-ALTER TABLE bookings.bookings ADD CONSTRAINT bookings_book_date_check CHECK (book_date < '2026-06-01' and book_date is not null) not valid;
+ALTER TABLE book.tickets ADD CONSTRAINT book_tickets_date_check CHECK (book_date < '2026-06-01' and book_date is not null) not valid;
 COMMIT;
+ALTER TABLE book.tickets VALIDATE CONSTRAINT book_tickets_date_check;
+ALTER TABLE book.tickets DROP CONSTRAINT book_tickets_date_check;
 
-ALTER TABLE bookings.bookings VALIDATE CONSTRAINT bookings_book_date_check;
-
-ALTER TABLE bookings.bookings DROP CONSTRAINT bookings_book_date_check;
-
-CREATE TABLE bookings.bookings_part (
-	book_ref bpchar(6) NOT NULL,
-	book_date timestamptz NOT NULL,
-	total_amount numeric(10,2) NOT NULL
+CREATE TABLE book.tickets_part (
+    id bigserial PRIMARY KEY,
+    fkRide int REFERENCES book.ride(id), 
+    fio text,
+    contact jsonb,
+    fkSeat int REFERENCES book.seat(id),
+    book_date timestamptz DEFAULT now()
 ) PARTITION BY RANGE (book_date);
 
-CREATE TABLE bookings.bookings_part_y2026m6avobe PARTITION OF bookings.bookings_part FOR VALUES FROM ('2026-06-01') TO (MAXVALUE);
+CREATE TABLE book.tickets_part (
+    id bigint NOT NULL,
+    fkRide int REFERENCES book.ride(id), 
+    fio text,
+    contact jsonb,
+    fkSeat int REFERENCES book.seat(id),
+    book_date timestamptz DEFAULT now(),
+    PRIMARY KEY (id, book_date)
+) PARTITION BY RANGE (book_date);
 
+CREATE TABLE book.tickets_part_y2026m6avobe PARTITION OF book.tickets_part FOR VALUES FROM ('2026-06-01') TO (MAXVALUE);
 
 BEGIN;
 SET statement_timeout TO '1s';
-ALTER TABLE bookings.bookings RENAME TO bookings_archive;
-ALTER TABLE bookings.bookings_part RENAME TO bookings;
-ALTER TABLE bookings.bookings ATTACH PARTITION bookings.bookings_archive FOR VALUES FROM (MINVALUE) to ('2026-06-01');
+ALTER TABLE book.tickets RENAME TO tickets_archive;
+ALTER TABLE book.tickets_part RENAME TO tickets;
+ALTER TABLE book.tickets ATTACH PARTITION book.tickets_archive FOR VALUES FROM (MINVALUE) to ('2026-06-01');
 COMMIT;
 
-EXPLAIN SELECT * FROM bookings.bookings WHERE book_date = now()::date;
+ALTER TABLE book.tickets DROP CONSTRAINT tickets_pkey;
+ALTER TABLE book.tickets ADD PRIMARY KEY (id, book_date);
+
+EXPLAIN SELECT * FROM book.tickets WHERE book_date = now()::date;
+
+
 
 -- 2 option
-DROP TABLE bookings.bookings;
-ALTER TABLE bookings.bookings2 RENAME TO bookings;
+DROP TABLE book.tickets;
+ALTER TABLE book.tickets2 RENAME TO tickets;
+DROP TABLE book.tickets_part;
 
-CREATE TABLE bookings.bookings_part (
-	book_ref bpchar(6) NOT NULL,
-	book_date timestamptz NOT NULL,
-	total_amount numeric(10,2) NOT NULL
-) PARTITION BY RANGE (book_date);
+--EXPLAIN
+select t.id, t.fkride, t.fio, t.contact, t.fkseat, r.startdate
+into book.tickets1
+from book.tickets t
+join book.ride r
+    on r.id=t.fkride;
+
+set search_path='book';
+DO $$
+DECLARE 
+v_min_date date;
+v_max_date date;
+v_cur_date date;
+v_sql_stmt text;
+c_main_table_name varchar(50) = 'tickets_part';
+begin
+    v_sql_stmt = 'create table '|| quote_ident(c_main_table_name) ||' (like tickets1) partition by range (startdate)';
+    execute v_sql_stmt;
+    v_sql_stmt = 'create table default_partition_'|| quote_ident(c_main_table_name) ||' partition of '|| quote_ident(c_main_table_name) || ' default';
+    execute v_sql_stmt;
+    select date_trunc('month', min(startdate)), date_trunc('month', max(startdate)) + interval '1 month'
+    into v_min_date, v_max_date
+    from tickets1;
+    v_cur_date = v_min_date;
+    loop
+        v_sql_stmt = 'create table ' || quote_ident(c_main_table_name || '_' || to_char(v_cur_date, 'yyyy_mm')) || ' partition of '
+        || quote_ident(c_main_table_name) || ' for values from (''' || 
+        to_char(v_cur_date, 'yyyy-mm-dd')|| ''') to (''' || to_char(v_cur_date+ interval '1 month', 'yyyy-mm-dd')|| ''')';
+        IF v_cur_date >= v_max_date THEN
+            EXIT;
+        END IF;
+        execute v_sql_stmt;
+        --raise notice '%', v_sql_stmt;
+        v_cur_date = v_cur_date + interval '1 month';
+    END LOOP;
+
+end $$;
+
+\dt+ book.*
 
 
-SELECT min(book_date), max(book_date) FROM bookings.bookings;
+INSERT INTO tickets_part SELECT * FROM tickets1;
 
+SELECT min(startdate), max(startdate) FROM tickets_part;
 
-CREATE TABLE bookings.bookings_part_y2016m08 PARTITION OF bookings.bookings_part FOR VALUES FROM ('2016-08-01') TO ('2016-09-01');
-CREATE TABLE bookings.bookings_part_y2016m09 PARTITION OF bookings.bookings_part FOR VALUES FROM ('2016-09-01') TO ('2016-10-01');
-CREATE TABLE bookings.bookings_part_y2016m10 PARTITION OF bookings.bookings_part FOR VALUES FROM ('2016-10-01') TO ('2016-11-01');
-CREATE TABLE bookings.bookings_part_y2016m11avobe PARTITION OF bookings.bookings_part FOR VALUES FROM ('2016-11-01') TO (MAXVALUE);
+DROP TABLE tickets;
+ALTER TABLE tickets_part RENAME TO tickets;
 
-\d+ bookings.bookings_part
+CREATE INDEX ON tickets(startdate);
 
-INSERT INTO bookings.bookings_part SELECT * FROM bookings.bookings;
+CREATE UNIQUE INDEX tickets_pkey ON tickets(id);
 
--- drop old & rename new
-ALTER TABLE bookings.bookings RENAME TO bookings2;
+EXPLAIN SELECT * FROM tickets WHERE startdate = '2020-01-01';
 
-DROP TABLE bookings.bookings;
-ALTER TABLE bookings.bookings_part RENAME TO bookings;
-
--- after sections + data load
-CREATE INDEX ON bookings.bookings(book_date);
-
--- error
-CREATE UNIQUE INDEX bookings_pkey2 ON bookings.bookings(book_ref);
-ALTER TABLE bookings.bookings ADD CONSTRAINT bookings_pkey_uniq UNIQUE (book_ref);
-
-CREATE UNIQUE INDEX bookings_pkey2 ON bookings.bookings(book_ref, book_date);
-
-EXPLAIN SELECT * FROM bookings.bookings WHERE book_date = now()::date;
 
 -- sliding window
 \c part
