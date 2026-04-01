@@ -46,28 +46,21 @@ sudo -u postgres psql < /home/1/1.sql
 -- pg_restore
 -- get duplicate data
 sudo -u postgres pg_restore /home/1/custom.gz -d backup
-sudo -u postgres psql
-\c backup
-select * from test2;
-exit
+sudo -u postgres psql -d backup -c "select * from test2;"
 
 echo "DROP DATABASE backup;" | sudo -u postgres psql
 sudo -u postgres pg_restore /home/1/custom.gz -d backup
 
 -- correct
-echo "CREATE DATABASE backup;" | sudo -u postgres psql
+sudo -u postgres psql -c "CREATE DATABASE backup;"
 sudo -u postgres pg_restore /home/1/custom.gz -d backup
-sudo -u postgres psql
-\c backup
-select * from test2;
-exit
+sudo -u postgres psql -d backup -c "select * from test2;"
 
 -- inly 1 table
 echo "DROP DATABASE backup;" | sudo -u postgres psql
 echo "CREATE DATABASE backup;" | sudo -u postgres psql
 sudo -u postgres pg_restore -t test /home/1/custom.gz -d backup
-sudo -u postgres psql
-\c backup
+sudo -u postgres psql -d backup
 \dt
 
 
@@ -103,14 +96,18 @@ SELECT type, database, user_name, address, auth_method
 FROM pg_hba_file_rules() WHERE DATABASE = '{replication}';
 
 
+-- drop
+sudo -u postgres pg_lsclusters
+sudo -u postgres pg_dropcluster --stop 18 main2
+
 -- let`s create 2 cluster
-sudo -u postgres pg_createcluster -d /var/lib/postgresql/14/main2 14 main2
+sudo -u postgres pg_createcluster -d /var/lib/postgresql/18/main2 18 main2
 
 -- delete files
-sudo -u postgres rm -rf /var/lib/postgresql/14/main2
+sudo -u postgres rm -rf /var/lib/postgresql/18/main2
 
 -- Let's make a backup of our database
-sudo -u postgres pg_basebackup -p 5432 -D /var/lib/postgresql/14/main2
+sudo -u postgres pg_basebackup -p 5432 -D /var/lib/postgresql/18/main2
 
 -- удалим ненужноe уже табличное пространство ts /home/postgres/tmptblspace
 sudo -u postgres psql
@@ -126,11 +123,13 @@ WHERE t.spcname = 'ts';
 DROP DATABASE app;
 DROP TABLESPACE ts;
 
-sudo -u postgres pg_basebackup -p 5432 -D /var/lib/postgresql/14/main2
+sudo -u postgres pg_basebackup -p 5432 -D /var/lib/postgresql/18/main2
 
-sudo -u postgres pg_ctlcluster 14 main2 start
+sudo -u postgres pg_ctlcluster 18 main2 start
 
 pg_lsclusters
+
+sudo systemctl daemon-reload
 
 sudo -u postgres psql --port 5433
 \l
