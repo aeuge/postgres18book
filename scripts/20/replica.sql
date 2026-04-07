@@ -1,5 +1,4 @@
 #replica
-
 pg_lsclusters
 
 -- stop and delete 2 clusters
