@@ -11,7 +11,7 @@
 4. Уровни изоляции транзакций
 5. Логическая архитектура
 6. Архитектура подключения к PostgreSQL 
-7. Права пользователей. RLS
+7. Права пользователей, RLS
 8. Shared buffers, WAL, bgwriter, checkpoint
 9. Блокировки, multixact
 10. Vacuum, autovacuum, statistic, workmem
