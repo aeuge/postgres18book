@@ -215,19 +215,12 @@ psql -c "CREATE DATABASE replica;";
 psql replica -c 'CREATE TABLE test(i int);'
 
 
-psql replica -c "CREATE SUBSCRIPTION test_sub 
-CONNECTION 'host=localhost port=5432 user=postgres password=Postgres123# dbname=replica' 
-PUBLICATION test_pub WITH (copy_data = false);"
+psql replica -c "CREATE SUBSCRIPTION test_sub CONNECTION 'host=postgres port=5432 user=postgres password=Postgres123# dbname=replica' PUBLICATION test_pub WITH (copy_data = false);"
 
 -- on 1
-psql -c "show listen_addresses;"
-
-psql -c "ALTER SYSTEM SET listen_addresses = '10.128.15.209, 127.0.0.1';"
+echo "host all postgres 10.128.0.0/16 md5" >> /etc/postgresql/18/main/pg_hba.conf
 psql -c "SELECT pg_reload_conf();"
 
-pg_ctlcluster 18 main restart
-
-psql -c "show listen_addresses;"
 
 -- on 2
 psql replica -c "CREATE SUBSCRIPTION test_sub 
@@ -268,7 +261,7 @@ psql replica -c "SELECT * FROM test;"
 psql replica -c "SELECT * FROM pg_stat_subscription;"
 
 -- we will also see the problem in the logs
-sudo tail /var/log/postgresql/postgresql-14-main2.log
+tail /var/log/postgresql/postgresql-18-main.log
 
 -- delete the conflicting entry on the subscriber
 psql replica -c "DELETE FROM test WHERE i = 2;"
