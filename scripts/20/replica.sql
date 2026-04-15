@@ -4,8 +4,7 @@ pg_lsclusters
 -- stop and delete 2 clusters
 sudo pg_ctlcluster 18 main stop
 sudo pg_dropcluster 18 main
-sudo pg_ctlcluster 18 main2 stop
-sudo pg_dropcluster 18 main2
+sudo pg_dropcluster 18 main2 --stop
 
 -- create new 2 clusters
 sudo pg_createcluster -d /var/lib/postgresql/18/main 18 main
@@ -21,6 +20,8 @@ sudo rm -rf /var/lib/postgresql/18/main2
 
 -- Let's make a backup of our database. The -R switch will create a stub control file recovery.conf.
 sudo -u postgres pg_basebackup -p 5432 -R -D /var/lib/postgresql/18/main2
+sudo chown postgres:postgres /var/lib/postgresql/18
+
 
 -- Add hot spare parameter
 echo 'hot_standby = on' >> sudo tee /var/lib/postgresql/18/main2/postgresql.auto.conf
@@ -66,8 +67,8 @@ echo "wal_log_hints = on" >> /etc/postgresql/18/main/postgresql.conf
 echo "archive_mode = on" >>  /etc/postgresql/18/main/postgresql.conf
 echo "archive_command = 'test ! -f /archive/%f && cp %p /archive/%f'" >>  /etc/postgresql/18/main/postgresql.conf
 
-echo "host replication replica 10.128.15.0/24 md5" >> /etc/postgresql/18/main/pg_hba.conf
-echo "host all rewind 10.128.15.0/24 md5" >> /etc/postgresql/18/main/pg_hba.conf
+echo "host replication replica 10.128.0.0/16 md5" >> /etc/postgresql/18/main/pg_hba.conf
+echo "host all rewind 10.128.0.0/16 md5" >> /etc/postgresql/18/main/pg_hba.conf
 
 
 -- 1 server
@@ -122,7 +123,6 @@ psql sample -c "select * from messages"
 -- Failover
 -- on a second container
 -- lets pretend that we lose our master - promote second container as a new master
-
 pg_ctlcluster 18 main promote
 
 -- standby file should be removed automatically
@@ -148,10 +148,11 @@ psql sample -c "select * from messages"
 pg_ctlcluster 18 main stop
 
 -- rewind
-/usr/lib/postgresql/18/bin/pg_rewind --target-pgdata /var/lib/postgresql/18/main --source-server="postgresql://rewind:test123@postres2:5432/sample" --progress
+/usr/lib/postgresql/18/bin/pg_rewind --target-pgdata /var/lib/postgresql/18/main --source-server="postgresql://rewind:test123@postgres2:5432/sample" --progress
 
 ping postgres2
 
+-- если нет доступа по имени, можно использовать IP адрес
 /usr/lib/postgresql/18/bin/pg_rewind --target-pgdata /var/lib/postgresql/18/main --source-server="postgresql://rewind:test123@10.128.15.210:5432/sample" --progress
 
 -- if error
@@ -173,12 +174,11 @@ echo "primary_conninfo = 'user=replica password=test123 host=10.128.15.210 port=
 -- adding another relication slot
 echo "primary_slot_name = 'replica2'" >> /var/lib/postgresql/18/main/postgresql.auto.conf
 
--- create slot on new master
-
+-- create slot on new master (2 vm)
 psql -c "select * from pg_create_physical_replication_slot('replica2')"
 psql -c "select * from pg_replication_slots"
 
--- start postgres
+-- start postgres (1 vm)
 pg_ctlcluster 18 main start
 
 pg_lsclusters
@@ -188,89 +188,93 @@ psql sample -c "select * from messages"
 
 
 pg_ctlcluster 18 main promote
-gcloud compute instances delete postgres2
 
 
 
 
--- Логическая репликация
-sudo -u postgres psql -c 'ALTER SYSTEM SET wal_level = logical;'
 
-sudo pg_ctlcluster 18 main restart
+-- logical replication
+-- on 1 && 2 VM
+psql -c 'ALTER SYSTEM SET wal_level = logical;'
+
+pg_ctlcluster 18 main restart
 
 -- Change the password to the user postgres
-sudo -u postgres psql -c "ALTER USER postgres WITH password 'Postgres123#';"
+psql -c "ALTER USER postgres WITH password 'Postgres123#';"
 
--- Create a publication on the first server
-sudo -u postgres psql -c "CREATE DATABASE replica;";
-sudo -u postgres psql replica -c "CREATE TABLE test(i int);"
-sudo -u postgres psql replica -c "CREATE PUBLICATION test_pub FOR TABLE test;"
-sudo -u postgres psql replica -c "\dRp+"
+-- Create a publication on the 1 server
+psql -c "CREATE DATABASE replica;";
+psql replica -c "CREATE TABLE test(i int);"
+psql replica -c "CREATE PUBLICATION test_pub FOR TABLE test;"
+psql replica -c "\dRp+"
+
+-- create a subscription on the 2 server
+psql replica -c 'CREATE TABLE test(i int);'
+
+psql -c "CREATE DATABASE replica;";
+psql replica -c 'CREATE TABLE test(i int);'
 
 
--- create a subscription on the second server
-sudo -u postgres psql replica -p 5433 -c 'CREATE TABLE test(i int);'
-
-sudo -u postgres psql replica -p 5433 -c "CREATE SUBSCRIPTION test_sub 
+psql replica -c "CREATE SUBSCRIPTION test_sub 
 CONNECTION 'host=localhost port=5432 user=postgres password=Postgres123# dbname=replica' 
 PUBLICATION test_pub WITH (copy_data = false);"
 
 -- on 1
-sudo -u postgres psql -c "show listen_addresses;"
+psql -c "show listen_addresses;"
 
-sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses = '10.128.15.209, 127.0.0.1';"
-sudo -u postgres psql -c "SELECT pg_reload_conf();"
+psql -c "ALTER SYSTEM SET listen_addresses = '10.128.15.209, 127.0.0.1';"
+psql -c "SELECT pg_reload_conf();"
 
-sudo pg_ctlcluster 18 main restart
+pg_ctlcluster 18 main restart
 
-sudo -u postgres psql -c "show listen_addresses;"
+psql -c "show listen_addresses;"
 
 -- on 2
-sudo -u postgres psql replica -p 5433 -c "CREATE SUBSCRIPTION test_sub 
+psql replica -c "CREATE SUBSCRIPTION test_sub 
 CONNECTION 'host=localhost port=5432 user=postgres password=Postgres123# dbname=replica' 
 PUBLICATION test_pub WITH (copy_data = false);"
 
-sudo -u postgres psql replica -p 5433 -c "\dRs";
+psql replica -c "\dRs";
 
 -- Let's look at the status of the subscription
-sudo -u postgres psql replica -p 5433 -c "SELECT * FROM pg_stat_subscription";
+psql replica -c "SELECT * FROM pg_stat_subscription";
 
 -- add the same data
 -- on subscriber
-sudo -u postgres psql replica -p 5433 -c "INSERT INTO test VALUES(1);"
+psql replica -c "INSERT INTO test VALUES(1);"
 
 -- on the publishing server
-sudo -u postgres psql replica -c "INSERT INTO test VALUES(1);"
+psql replica -c "INSERT INTO test VALUES(1);"
 
 -- on subscriber
-sudo -u postgres psql replica -p 5433 -c "SELECT * FROM test;"
+psql replica -c "SELECT * FROM test;"
 
 -- clear the table and add an index on subscriber
-sudo -u postgres psql replica -p 5433 -c "TRUNCATE test;"
-sudo -u postgres psql replica -p 5433 -c "CREATE UNIQUE INDEX ON test (i);"
-sudo -u postgres psql replica -p 5433 -c "\dS+ test"
+psql replica -c "TRUNCATE test;"
+psql replica -c "CREATE UNIQUE INDEX ON test (i);"
+psql replica -c "\dS+ test"
 
 -- check the same data after creating the index
 -- on subscriber
-sudo -u postgres psql replica -p 5433 -c "INSERT INTO test VALUES(2);"
+psql replica -c "INSERT INTO test VALUES(2);"
 
 -- on the publishing server
-sudo -u postgres psql replica -c "INSERT INTO test VALUES(2);"
+psql replica -c "INSERT INTO test VALUES(2);"
 
 -- on subscriber
-sudo -u postgres psql replica -p 5433 -c "SELECT * FROM test;"
+psql replica -c "SELECT * FROM test;"
 
 -- Let's look at the status of the subscription
-sudo -u postgres psql replica -p 5433 -c "SELECT * FROM pg_stat_subscription;"
+psql replica -c "SELECT * FROM pg_stat_subscription;"
 
 -- we will also see the problem in the logs
 sudo tail /var/log/postgresql/postgresql-14-main2.log
 
 -- delete the conflicting entry on the subscriber
-sudo -u postgres psql replica -p 5433 -c "DELETE FROM test WHERE i = 2;"
+psql replica -c "DELETE FROM test WHERE i = 2;"
 
 -- Let's look at the status of the subscription:
-sudo -u postgres psql replica -p 5433 -c "SELECT * FROM pg_stat_subscription;"
+psql replica -c "SELECT * FROM pg_stat_subscription;"
 
 -- to delete a post and a subscription
 DROP PUBLICATION test_pub;
