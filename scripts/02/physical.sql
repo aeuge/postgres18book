@@ -139,5 +139,9 @@ pg_lsclusters
 
 sudo pg_dropcluster 17 main17
 
+pg_upgradecluster --link --method=upgrade 17 main
+
 sudo pg_ctlcluster 18 main17 stop
 sudo pg_dropcluster 18 main17
+
+sudo pg_dropcluster 18 main17 --stop

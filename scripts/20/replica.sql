@@ -89,6 +89,7 @@ pgbench -i -s 10 sample
 -- cleanup data directory
 rm -rf /var/lib/postgresql/18/main
 
+pg_basebackup --host=10.128.0.32 --port=5432 --username=replica --pgdata=/var/lib/postgresql/18/main/ --progress --write-recovery-conf --create-slot --slot=replica1
 
 -- notes:
 --  it will ask for 123 password of replica user created earlier
