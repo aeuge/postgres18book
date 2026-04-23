@@ -82,7 +82,7 @@ CREATE TABLE book.tickets_part (
     PRIMARY KEY (id, book_date)
 ) PARTITION BY RANGE (book_date);
 
-CREATE TABLE book.tickets_part_y2026m6avobe PARTITION OF book.tickets_part FOR VALUES FROM ('2026-06-01') TO (MAXVALUE);
+CREATE TABLE book.tickets_part_y2026m6above PARTITION OF book.tickets_part FOR VALUES FROM ('2026-06-01') TO (MAXVALUE);
 
 BEGIN;
 SET statement_timeout TO '1s';
