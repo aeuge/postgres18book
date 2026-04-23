@@ -1,8 +1,10 @@
 ## Книга: PostgreSQL 18. Архитектура и лучшие практики
 #### Author https://aristov.tech
-#### В стадии написания
-#### Ориентировочно премьера будет в мае 2026
-#### В каждой главе разобраны основные тонкости архитектуры PostgreSQL. Большое количество продуктовых примеров для осознанной разработки. Лучшие практики.
+#### В стадии коррекции редакторами и передачи в типографию
+#### Ориентировочно премьера будет 22 мая 2026
+#### В каждой главе разобраны основные тонкости архитектуры PostgreSQL. 
+#### Большое количество продуктовых примеров для осознанной разработки. 
+#### Лучшие практики.
 #### заказ https://aristov.tech/#orderbook
 ## Оглавление
 01. [Основы PostgreSQL](https://github.com/aeuge/postgres18book/blob/main/chapters/CHAPTER01.md)
@@ -27,3 +29,5 @@
 20. [Архитектура репликации в PostgreSQL](https://github.com/aeuge/postgres18book/blob/main/chapters/CHAPTER20.md)
 21. [Оптимизация производительности. Основные подходы](https://github.com/aeuge/postgres18book/blob/main/chapters/CHAPTER21.md)
 22. [Обслуживание PostgreSQL](https://github.com/aeuge/postgres18book/blob/main/chapters/CHAPTER22.md)
+
+![Обложка книги](https://github.com/aeuge/postgres18book/blob/main/cover18.jpg)
