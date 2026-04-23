@@ -1,5 +1,5 @@
 # PostgreSQL
-00. мой github https://github.com/aeuge/Postgres18book
+00. мой github https://github.com/aeuge/postgres18book
 01. ссылка для заказа книги https://aristov.tech/#orderbook
 02. релиз PostgreSQL https://www.postgresql.org/about/news/postgresql-18-released-3142/ 
 03. изменения в релизе https://www.postgresql.org/docs/17/static/release-18.html
